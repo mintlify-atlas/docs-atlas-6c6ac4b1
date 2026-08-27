@@ -1,0 +1,64 @@
+---
+title: "Axis Locking: Constrain Transforms to X, Y, or Z"
+sidebarTitle: "Axis Locking"
+description: "Lock any B3D Nav transform to a single axis by pressing X, Y, or Z while a Grab, Rotate, or Scale operation is in progress."
+---
+
+Axis locking constrains an active transform to a single world-space axis, replicating Blender's axis-lock behavior. Instead of applying movement, rotation, or scale across all directions, the operation is pinned to exactly one axis vector — giving you precise, single-dimension control without leaving the keyboard.
+
+## How to lock an axis
+
+While a transform is already active (after pressing `G`, `R`, or `S`), press `X`, `Y`, or `Z` to lock to that axis. The plugin calls `SetTransformAxis()` to update `CurrentAxis`, and all subsequent mouse or numeric input is applied along that axis only via `GetAxisVector()`.
+
+```cpp BlenderInputHandler.cpp
+// Inside HandleKeyDownEvent, while bIsTransforming is true:
+EBlenderTransformAxis Axis;
+if (IsAxisKey(InKeyEvent, Axis))
+{
+    SetTransformAxis(Axis);
+    return true;
+}
+```
+
+## Axis vectors
+
+`GetAxisVector()` converts an `EBlenderTransformAxis` enum value to the `FVector` used in the transform calculation:
+
+| Axis | Key | `FVector` |
+|---|---|---|
+| X | `X` | `FVector(1, 0, 0)` |
+| Y | `Y` | `FVector(0, 1, 0)` |
+| Z | `Z` | `FVector(0, 0, 1)` |
+| All (default — Grab / Scale) | — | `FVector(1, 1, 1)` |
+| All (default — Rotate) | — | `FVector(0, 0, 1)` |
+
+For Grab and Scale, the "All" default vector `(1, 1, 1)` means every axis is affected equally. For Rotate, the "All" default is `(0, 0, 1)` — world Z — since unconstrained rotation defaults to the yaw axis.
+
+## Toggling back to all axes
+
+Pressing the same axis key **again** while that axis is already locked resets `CurrentAxis` back to `EBlenderTransformAxis::All`. This mirrors Blender's behavior of double-tapping an axis key to release the constraint:
+
+```cpp BlenderInputHandler.cpp
+void FBlenderInputHandler::SetTransformAxis(EBlenderTransformAxis Axis)
+{
+    if (CurrentAxis == Axis)
+    {
+        // Pressing the same key again resets to all axes
+        CurrentAxis = EBlenderTransformAxis::All;
+    }
+    else
+    {
+        CurrentAxis = Axis;
+    }
+}
+```
+
+For example: pressing `G` then `Z` locks translation to the Z axis. Pressing `Z` a second time releases the lock and restores free movement across all axes.
+
+## Axis locking with each transform mode
+
+**Grab (translation):** Axis locking limits translation to a single direction. Pressing `G` → `X` means the actor can only move along the world X axis — horizontal mouse movement maps to that axis, and the Y and Z components of the direction vector are zero.
+
+**Rotate:** Axis locking sets the rotation axis used in the quaternion calculation. Pressing `R` → `X` rotates around the world X axis (roll). Pressing `R` → `Y` rotates around Y (pitch). Pressing `R` → `Z` rotates around Z (yaw). When no axis is locked, rotation defaults to the Z axis.
+
+**Scale:** Axis locking limits which component of scale is modified. Pressing `S` → `Z` scales only the Z component of the actor's scale — X and Y remain unchanged. Without a lock, all three scale components are multiplied by the same factor (uniform scale).

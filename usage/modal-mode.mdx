@@ -1,0 +1,60 @@
+---
+title: "B3D Nav Modal Mode: Activating Blender Controls in UE5"
+sidebarTitle: "Modal Mode"
+description: "Learn how to toggle B3D Nav's modal mode on and off using the toolbar button, and understand how the input processor intercepts editor input."
+---
+
+B3D Nav operates through a **modal mode** — a toggled state where all G, R, S, X, Y, and Z keys are intercepted and routed exclusively to B3D Nav's transform system rather than the standard UE5 editor input pipeline. While modal mode is active, the plugin behaves as a global input layer, capturing keyboard and mouse events before any other editor widget has a chance to process them.
+
+## Activating modal mode
+
+Click the **Blender Controls** button in the Level Editor toolbar to toggle B3D Nav on or off.
+
+Internally, clicking the toolbar button calls `FBlenderControlsModule::PluginButtonClicked()`, which in turn calls `FBlenderInputHandler::ToggleEnabled()`:
+
+```cpp BlenderControls.cpp
+void FBlenderControlsModule::PluginButtonClicked()
+{
+    if (BlenderInputHandler.IsValid())
+    {
+        BlenderInputHandler->ToggleEnabled();
+    }
+}
+```
+
+The toolbar button is registered as an `EUserInterfaceActionType::ToggleButton`, so it visually reflects the current state — appearing highlighted when B3D Nav is active, and unpressed when it is not.
+
+## How it works
+
+When `ToggleEnabled()` flips `bIsEnabled` to `true`, `FBlenderInputHandler` registers itself as a global `IInputProcessor` via Slate's pre-processor stack:
+
+```cpp BlenderInputHandler.cpp
+void FBlenderInputHandler::RegisterInputProcessor()
+{
+    if (bIsEnabled && FSlateApplication::IsInitialized())
+    {
+        FSlateApplication::Get().RegisterInputPreProcessor(SharedThis(this));
+    }
+}
+```
+
+Because it sits in the `IInputProcessor` chain, `FBlenderInputHandler` receives every keyboard and mouse event **before** Slate dispatches them to the currently focused widget. This is what makes the intercept global and seamless — no widget focus change is required.
+
+When modal mode is disabled, `UnregisterInputPreProcessor()` removes the handler from the chain, and all input returns to normal UE5 routing.
+
+## When to disable modal mode
+
+Certain workflows conflict with B3D Nav's key intercept. Disable modal mode first if you need to:
+
+- **Type in a text field** — G, R, S, and numeric keys will be consumed by B3D Nav before reaching any input box.
+- **Use standard UE5 shortcuts** that share intercepted keys, such as Save (Ctrl+S, which is safe, but bare `S` is not).
+- **Work with Blueprint graphs** where `G`, `R`, or `S` serve as node placement shortcuts.
+- **Use Sequencer or other editor panels** that bind these keys for their own navigation.
+
+<Warning>
+  While modal mode is active, **G, R, S, X, Y, Z, and numeric keys (0–9, `.`, `-`)** are consumed by the plugin and never reach the focused widget. Other editor shortcuts may be affected if they rely on any of these keys being passed through to Slate normally.
+</Warning>
+
+<Tip>
+  Assign B3D Nav's toolbar toggle to a keyboard shortcut via **Editor Preferences → Keyboard Shortcuts** for faster switching between B3D Nav mode and standard UE5 input without having to reach for the toolbar.
+</Tip>

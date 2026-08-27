@@ -1,0 +1,95 @@
+---
+title: "Installing B3D Nav in Your UE5 Project"
+sidebarTitle: "Installation"
+description: "Step-by-step guide to copying the B3D Nav plugin into a UE5 project, enabling it in the Plugins panel, and restarting the editor."
+---
+
+Installing B3D Nav involves three steps: copying the `BlenderControls` plugin folder into your project's `Plugins/` directory, enabling the plugin through Unreal Engine's **Plugins** panel, and restarting the editor so the module loads. No package manager, marketplace installation, or engine modification is required.
+
+## Requirements
+
+- **Unreal Engine 5** (any 5.x release)
+- A **C++ or Blueprint project** — the plugin is an Editor-only module, so it compiles and runs inside the editor regardless of project type
+- No third-party dependencies — B3D Nav depends exclusively on standard UE5 engine modules:
+
+| Module | Type |
+|---|---|
+| `Core` | Public dependency |
+| `CoreUObject` | Private dependency |
+| `Engine` | Private dependency |
+| `Slate` | Private dependency |
+| `SlateCore` | Private dependency |
+| `InputCore` | Private dependency |
+| `EditorStyle` | Private dependency |
+| `UnrealEd` | Private dependency |
+| `LevelEditor` | Private dependency |
+| `Projects` | Private dependency |
+| `ToolMenus` | Private dependency |
+
+All modules listed above ship with Unreal Engine 5. You do not need to install anything additional.
+
+## Installation steps
+
+<Steps>
+  <Step title="Get the plugin source">
+    Clone the repository or download it as a ZIP from GitHub:
+
+    ```bash
+    git clone https://github.com/ppmpreetham/b3d-nav.git
+    ```
+
+    If you downloaded a ZIP, extract it so you have a folder containing `BlenderControls.uplugin`, `Source/`, `Resources/`, and `Config/`.
+  </Step>
+
+  <Step title="Create a Plugins folder in your project">
+    In your UE5 project root (the folder that contains your `.uproject` file), create a `Plugins/` directory if one does not already exist:
+
+    ```
+    MyProject/
+    ├── Content/
+    ├── Source/          ← present in C++ projects
+    ├── Plugins/         ← create this if missing
+    └── MyProject.uproject
+    ```
+  </Step>
+
+  <Step title="Copy the BlenderControls folder into Plugins/">
+    Copy the entire `BlenderControls` folder (not just its contents) into the `Plugins/` directory you created. The result should look like this:
+
+    ```
+    MyProject/
+    └── Plugins/
+        └── BlenderControls/
+            ├── BlenderControls.uplugin
+            ├── Source/
+            ├── Resources/
+            └── Config/
+    ```
+  </Step>
+
+  <Step title="Enable the plugin in Unreal Engine">
+    Open your UE5 project. From the main menu, go to **Edit → Plugins**. In the search bar, type **Blender Controls**. Check the checkbox next to the plugin to enable it.
+  </Step>
+
+  <Step title="Restart the Unreal Editor">
+    When prompted, click **Restart Now** to let the engine reload with the plugin active. If you are not prompted automatically, close and reopen the editor manually.
+  </Step>
+</Steps>
+
+<Tip>
+  For C++ projects the Unreal Editor will offer to recompile the plugin from source — accept the prompt. If you are using a Blueprint-only project and the editor cannot compile automatically, open the solution in **Visual Studio** or **JetBrains Rider** and build the `Development Editor` configuration manually before relaunching.
+</Tip>
+
+<Warning>
+  B3D Nav is declared as `"Type": "Editor"` in `BlenderControls.uplugin`. This means the module is loaded only inside the Unreal Editor and is **not** packaged into shipping or development builds of your game. You do not need to worry about runtime overhead or stripping the plugin before release.
+</Warning>
+
+## Verifying the installation
+
+After the editor restarts, look at the **Level Editor toolbar** at the top of the main viewport. You should see a new **Blender Controls** toggle button added to the toolbar's user section. Clicking it activates modal mode (see [Modal Mode](/usage/modal-mode) for details).
+
+If the button does not appear:
+
+1. Open **Window → Output Log** and search for `BlenderControls` or `Blender Controls` to check for load errors.
+2. Confirm the folder structure matches the layout in Step 3 — the `.uplugin` file must be directly inside `Plugins/BlenderControls/`, not nested further.
+3. Verify the plugin is checked in **Edit → Plugins** and that no error icon is shown next to it.

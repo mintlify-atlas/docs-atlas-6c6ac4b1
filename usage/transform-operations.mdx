@@ -1,0 +1,102 @@
+---
+title: "Grab, Rotate, and Scale Actors with B3D Nav"
+sidebarTitle: "Transform Operations"
+description: "Detailed guide to B3D Nav's three transform modes — Grab (G), Rotate (R), and Scale (S) — with mouse and numeric input workflows."
+---
+
+B3D Nav provides three transform modes — **Grab**, **Rotate**, and **Scale** — each triggered by a single key press while [modal mode](/usage/modal-mode) is active. This matches Blender's modal transform workflow: press a key to start the operation, move your mouse to adjust the value interactively, then confirm or cancel when done.
+
+## Grab (Translation)
+
+Press `G` to enter `EBlenderTransformMode::Grab`. Moving the mouse translates all selected actors along the active axis.
+
+Mouse movement is converted to world-space displacement using a scale factor of `0.01`:
+
+```cpp BlenderInputHandler.cpp
+const float ScaleFactor = 0.01f;
+const float TransformValue = Delta.X * ScaleFactor;
+```
+
+The resulting translation vector is `Direction * Value`, where `Direction` is the axis vector and `Value` is the scaled mouse delta. By default — before any axis is locked — the axis is `EBlenderTransformAxis::All`, which resolves to `FVector(1, 1, 1)`, moving the actor uniformly along all axes in proportion to horizontal mouse movement.
+
+## Rotate
+
+Press `R` to enter `EBlenderTransformMode::Rotate`. The horizontal mouse delta (X component only) drives the rotation angle.
+
+The raw `TransformValue` (mouse delta × `0.01`) is multiplied by `50.0f` inside `TransformSelectedActors` to convert it to a usable degree range:
+
+```cpp BlenderInputHandler.cpp
+const float AngleInDegrees = Value * 50.0f;  // Scaling factor for better control
+FQuat DeltaRotation = FQuat(Direction, FMath::DegreesToRadians(AngleInDegrees));
+ActorTransform.SetRotation(DeltaRotation * ActorTransform.GetRotation());
+```
+
+The default rotation axis (when no axis lock is active, `EBlenderTransformAxis::All`) is `FVector(0, 0, 1)` — the world Z axis. Lock to X or Y to rotate around those axes instead.
+
+## Scale
+
+Press `S` to enter `EBlenderTransformMode::Scale`. The horizontal mouse delta drives a multiplicative scale factor applied on top of the actor's existing scale.
+
+The scale factor formula is:
+
+```
+ScaleFactor = 1.0 + Value
+```
+
+where `Value` is the raw mouse delta × `0.01`. Dragging right increases scale; dragging left decreases it.
+
+For uniform scaling (`EBlenderTransformAxis::All`), all three axes are scaled equally:
+
+```cpp BlenderInputHandler.cpp
+float ScaleFactor = 1.0f + Value;
+Scale *= ScaleFactor;
+```
+
+For single-axis scaling (after pressing X, Y, or Z), only the locked axis component is scaled; the others remain at `1.0` (no change):
+
+```cpp BlenderInputHandler.cpp
+if (Direction.X > 0.0f) Scale.X = 1.0f + Value;
+if (Direction.Y > 0.0f) Scale.Y = 1.0f + Value;
+if (Direction.Z > 0.0f) Scale.Z = 1.0f + Value;
+```
+
+Each axis of the resulting scale is clamped to a minimum of `0.001` to prevent zero or negative scale values:
+
+```cpp BlenderInputHandler.cpp
+NewScale.X = FMath::Max(0.001f, NewScale.X);
+NewScale.Y = FMath::Max(0.001f, NewScale.Y);
+NewScale.Z = FMath::Max(0.001f, NewScale.Z);
+```
+
+## Confirming and cancelling
+
+| Input | Action |
+|---|---|
+| **Left Mouse Button** | Confirm — calls `EndTransform(true)` |
+| **Enter** | Confirm — calls `EndTransform(true)` |
+| **Space** | Confirm — calls `EndTransform(true)` |
+| **Right Mouse Button** | Cancel — calls `EndTransform(false)` |
+| **Escape** | Cancel — calls `EndTransform(false)` |
+
+When cancelled, the transform operation exits without finalizing any further changes. Confirming applies all accumulated mouse-driven (or numerically typed) deltas to the actors' transforms permanently.
+
+## Working with multiple actors
+
+All currently selected actors are transformed simultaneously. B3D Nav iterates over `GEditor->GetSelectedActors()` and applies the identical transform delta to every actor in the selection:
+
+```cpp BlenderInputHandler.cpp
+USelection* SelectedActors = GEditor->GetSelectedActors();
+for (FSelectionIterator It(*SelectedActors); It; ++It)
+{
+    if (AActor* Actor = Cast<AActor>(*It))
+    {
+        // Apply transform to each selected actor
+    }
+}
+```
+
+After each transform step, `GEditor->RedrawLevelEditingViewports()` is called to keep the viewport in sync with the updated positions.
+
+<Note>
+  Numeric input (typing a value) overrides mouse movement when active — once the first digit is typed, mouse deltas are ignored until the operation ends. See the [Numeric Input](/usage/numeric-input) page for details.
+</Note>

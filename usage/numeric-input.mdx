@@ -1,0 +1,78 @@
+---
+title: "Numeric Input: Precise Transforms in B3D Nav"
+sidebarTitle: "Numeric Input"
+description: "Type a numeric value during any active B3D Nav transform to apply an exact distance, angle, or scale factor instead of dragging the mouse."
+---
+
+Numeric input lets you specify exact transform values by typing during an active transform mode, bypassing mouse movement entirely. Rather than eyeballing a distance or angle with the mouse, you can type the exact value you want and press Enter to apply it — a workflow identical to Blender's modal numeric entry.
+
+## How to use numeric input
+
+1. Start a transform by pressing `G`, `R`, or `S`.
+2. Optionally lock to an axis by pressing `X`, `Y`, or `Z`.
+3. Type your value — digits `0`–`9`, `.` for decimals, and `-` for negative values are all accepted.
+4. Press **Enter** or **Space** to apply. The plugin calls `ApplyNumericTransform()` followed by `EndTransform(true)`.
+
+You can combine steps 2 and 3 in any order — lock the axis before or after you start typing.
+
+## Supported keys
+
+The `IsNumericKey()` function recognises the following key inputs and appends each character to `NumericBuffer`:
+
+| Keys | Character appended |
+|---|---|
+| `0`–`9` (keyboard row) | `"0"` – `"9"` |
+| `NumPad0`–`NumPad9` | `"0"` – `"9"` |
+| `.` (Period) | `"."` (decimal point) |
+| `-` (Hyphen) or `-` (NumPad Subtract) | `"-"` (negative sign) |
+
+All other keys during an active transform are either handled as axis locks, confirm/cancel keys, or ignored — they are never appended to the buffer.
+
+## Examples
+
+| Key sequence | Result |
+|---|---|
+| `G` → `100` → Enter | Moves selection 100 units along all axes |
+| `G` → `Z` → `50` → Enter | Moves selection 50 units along the Z axis |
+| `R` → `Z` → `45` → Enter | Rotates selection 45 degrees around the Z axis |
+| `R` → `X` → `-90` → Enter | Rotates selection −90 degrees around the X axis |
+| `S` → `1` → Enter | Scales selection by `1.0 + 1.0 = 2.0×` (doubles size) |
+| `S` → `Z` → `0.5` → Enter | Scales Z axis by `1.0 + 0.5 = 1.5×` |
+
+<Warning>
+  The Scale formula **adds 1 to your typed value**: `ScaleFactor = 1.0 + Value`. To double an object's size, type `1` (not `2`). To halve it, type `-0.5`. Typing `0` results in `1.0 + 0.0 = 1.0×` — no change.
+</Warning>
+
+## Mouse movement is paused during numeric input
+
+Once the first digit is typed, `bIsNumericInput` is set to `true`. From that point on, `HandleMouseMoveEvent` returns early without applying any mouse-driven transforms:
+
+```cpp BlenderInputHandler.cpp
+bool FBlenderInputHandler::HandleMouseMoveEvent(FSlateApplication& SlateApp, const FPointerEvent& MouseEvent)
+{
+    if (!bIsEnabled || !bIsTransforming || bIsNumericInput)
+    {
+        return false;
+    }
+    // ... mouse delta logic only runs when bIsNumericInput is false
+}
+```
+
+This means whatever mouse position you stopped at is frozen — only the typed value is applied when you confirm. If you typed incorrectly, cancel with **Right Mouse Button** or **Escape** and start the operation again.
+
+When the operation ends (either confirmed or cancelled), `bIsNumericInput` is reset to `false` and `NumericBuffer` is cleared, ready for the next operation.
+
+## Source: ApplyNumericTransform
+
+When you confirm a numeric transform, `ApplyNumericTransform()` parses the buffer and dispatches to the same `TransformSelectedActors()` function that mouse input uses:
+
+```cpp BlenderInputHandler.cpp
+void FBlenderInputHandler::ApplyNumericTransform()
+{
+    float NumericValue = FCString::Atof(*NumericBuffer);
+    FVector AxisVector = GetAxisVector(CurrentAxis);
+    TransformSelectedActors(AxisVector, NumericValue);
+}
+```
+
+`FCString::Atof` converts the accumulated string (e.g. `"45"`, `"-0.5"`, `"100"`) into a `float`, which is then passed through the same transform path as interactive mouse input — ensuring identical behaviour between the two input methods.

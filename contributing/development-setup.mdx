@@ -1,0 +1,76 @@
+---
+title: "Setting Up a B3D Nav Development Environment"
+sidebarTitle: "Development Setup"
+description: "Clone the B3D Nav repository, add it to a UE5 project, and configure your C++ IDE to build and iterate on the plugin source."
+---
+
+To extend or modify B3D Nav, you'll set up a local development environment by cloning the repository, linking it to a UE5 C++ project, and compiling with Unreal Build Tool.
+
+## Prerequisites
+
+- **Unreal Engine 5** (any 5.x version)
+- **Visual Studio 2022** (Windows) or **Xcode** (macOS) with C++ support
+- **A UE5 C++ project** — Blueprint-only projects can host editor plugins but need to be converted to C++ first for compilation
+
+## Steps
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/ppmpreetham/b3d-nav.git
+    ```
+  </Step>
+  <Step title="Create the Plugins directory">
+    Create a `Plugins/` directory in your UE5 project root if one doesn't already exist.
+  </Step>
+  <Step title="Copy the plugin folder">
+    Copy the cloned `b3d-nav` folder into `Plugins/BlenderControls/`. The folder name must match the module name: `BlenderControls`.
+  </Step>
+  <Step title="Generate project files">
+    Right-click your `.uproject` file and choose **Generate Visual Studio project files** (Windows) or use `UnrealBuildTool` on macOS/Linux.
+  </Step>
+  <Step title="Open the generated solution">
+    Open the generated solution (`.sln`) in Visual Studio or the `.xcworkspace` in Xcode.
+  </Step>
+  <Step title="Build the project">
+    Build the project in the **Development Editor** configuration.
+  </Step>
+  <Step title="Launch Unreal Editor">
+    Launch the Unreal Editor. The plugin appears in **Edit → Plugins** under the **Project** category.
+  </Step>
+</Steps>
+
+## Project structure
+
+```
+BlenderControls/
+├── BlenderControls.uplugin       # Plugin descriptor
+├── Config/
+│   └── FilterPlugin.ini          # Packaging filter (empty by default)
+├── Resources/
+│   ├── Icon128.png               # Plugin icon (128×128)
+│   └── ButtonIcon_40x.png        # Toolbar button icon (40×40)
+└── Source/
+    └── BlenderControls/
+        ├── BlenderControls.Build.cs
+        ├── Public/
+        │   ├── BlenderControls.h
+        │   ├── BlenderControlsCommands.h
+        │   ├── BlenderControlsStyle.h
+        │   └── BlenderInputHandler.h
+        └── Private/
+            ├── BlenderControls.cpp
+            ├── BlenderControlsCommands.cpp
+            ├── BlenderControlsStyle.cpp
+            └── BlenderInputHandler.cpp
+```
+
+## Key entry points for contributors
+
+- **`BlenderInputHandler.cpp`** — All transform logic lives here. The state machine (`BeginTransform`, `EndTransform`, `ApplyTransform`, `ApplyNumericTransform`) is the primary area for feature development.
+- **`BlenderControls.Build.cs`** — Add new UE5 module dependencies here if your changes need additional engine APIs. Current private dependencies include `CoreUObject`, `Engine`, `Slate`, `SlateCore`, `InputCore`, `EditorStyle`, `UnrealEd`, `LevelEditor`, `Projects`, and `ToolMenus`.
+- **`BlenderControlsCommands.cpp`** — Register new editor UI commands here.
+
+<Tip>
+  Use the UE5 Output Log (**Window → Output Log**) to see B3D Nav's log messages. The plugin logs transform mode changes, axis locks, and numeric input via `UE_LOG(LogTemp, Display, ...)` statements throughout `BlenderInputHandler.cpp`.
+</Tip>

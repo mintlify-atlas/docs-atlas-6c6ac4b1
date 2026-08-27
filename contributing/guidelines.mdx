@@ -1,0 +1,61 @@
+---
+title: "Contributing to B3D Nav: Guidelines and Best Practices"
+sidebarTitle: "Guidelines"
+description: "How to report bugs, submit pull requests, and extend B3D Nav with new features while keeping the codebase consistent with its existing patterns."
+---
+
+B3D Nav is an open-source Hacktoberfest-eligible project. Contributions — bug fixes, new Blender shortcuts, improved cancel behavior, or documentation — are welcome via GitHub pull requests.
+
+## Reporting bugs
+
+Open an issue at [https://github.com/ppmpreetham/b3d-nav/issues](https://github.com/ppmpreetham/b3d-nav/issues). Please include:
+
+- **UE5 version** you are running
+- **Steps to reproduce** the issue
+- **Expected vs. actual behavior**
+- **Output Log output** — filter the log by `BlenderControls` to capture relevant messages
+
+## Areas for contribution
+
+The following improvements are grounded in known limitations in the current source:
+
+- **True cancel behavior** — `EndTransform(false)` currently resets the state machine but does not restore actor positions. Storing original transforms in `BeginTransform()` and restoring them in `EndTransform(false)` would make **Escape** / **RMB** a proper undo.
+- **Additional shortcuts** — Blender supports `GG` (slide along surface), **Shift+axis** (exclude axis), and Numpad views. These are not yet implemented.
+- **Visual feedback** — No on-screen indicator shows the current transform mode or the typed numeric buffer. An editor HUD overlay would significantly improve usability.
+- **Screen-space translation** — The current implementation uses world-space axis vectors. True screen-space grab (relative to the camera forward vector) would match Blender's behavior more closely.
+
+## Pull request guidelines
+
+<Steps>
+  <Step title="Fork the repository">
+    Fork the repository on GitHub.
+  </Step>
+  <Step title="Create a feature branch">
+    ```bash
+    git checkout -b feature/my-improvement
+    ```
+  </Step>
+  <Step title="Follow existing code style">
+    Follow UE5 naming conventions (`F` prefix for structs, `E` for enums, `b` prefix for booleans), tab indentation, and Unreal macro usage — consistent with the existing source.
+  </Step>
+  <Step title="Test your changes">
+    Build and test with the **Development Editor** configuration before submitting.
+  </Step>
+  <Step title="Open a pull request">
+    Open a pull request against `main` with a clear description of what changed and why.
+  </Step>
+</Steps>
+
+## Code style notes
+
+- Follow UE5 coding standards: `FMyClass`, `EMyEnum`, `bMyBool`, `MyFunction()`
+- Use `UE_LOG(LogTemp, Display, ...)` for debug output — this is the established pattern throughout `BlenderInputHandler.cpp`
+- Keep `BlenderInputHandler` as the single owner of transform state — do not leak state into `FBlenderControlsModule`
+
+<Note>
+  This project participates in Hacktoberfest. Pull requests opened during October count toward Hacktoberfest contributions.
+</Note>
+
+<Info>
+  A more complete fork exists at [https://github.com/Nehon/Blend4Real](https://github.com/Nehon/Blend4Real) — review it before implementing features to avoid duplicating already-solved work.
+</Info>

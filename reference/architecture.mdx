@@ -1,0 +1,67 @@
+---
+title: "B3D Nav Plugin Architecture and Code Structure"
+sidebarTitle: "Architecture"
+description: "Understand how B3D Nav's three classes — FBlenderControlsModule, FBlenderInputHandler, and FBlenderControlsCommands — interact to deliver Blender-style transforms."
+---
+
+B3D Nav is a single-module UE5 editor plugin organized into three main classes. Understanding the architecture helps you extend the plugin or debug unexpected behavior.
+
+## Class Overview
+
+<CardGroup cols={3}>
+  <Card title="FBlenderControlsModule">
+    The `IModuleInterface` entry point. Registers styles, commands, and the toolbar extension. Owns the `FBlenderInputHandler` instance and routes toolbar button clicks to it via `PluginButtonClicked()`.
+  </Card>
+  <Card title="FBlenderInputHandler">
+    The core class. Implements `IInputProcessor` and owns the complete state machine — current transform mode, locked axis, and numeric input buffer. All key and mouse event routing lives here.
+  </Card>
+  <Card title="FBlenderControlsCommands">
+    Declares the single `PluginAction` UI command that backs the toolbar toggle button. Inherits from `TCommands` and registers via `UI_COMMAND` as a `ToggleButton`.
+  </Card>
+</CardGroup>
+
+## Lifecycle
+
+<Steps>
+  <Step title="StartupModule">
+    The engine calls `FBlenderControlsModule::StartupModule()`. The module initializes `FBlenderControlsStyle`, registers `FBlenderControlsCommands`, maps the toolbar action to `PluginButtonClicked()`, and constructs a new `FBlenderInputHandler` (stored as a `TSharedPtr`).
+  </Step>
+  <Step title="User toggles modal mode">
+    Clicking the toolbar button calls `PluginButtonClicked()`, which forwards to `FBlenderInputHandler::ToggleEnabled()`. When enabling, the handler calls `FSlateApplication::Get().RegisterInputPreProcessor(SharedThis(this))`. When disabling, it calls `UnregisterInputPreProcessor`.
+  </Step>
+  <Step title="Input capture loop">
+    While the processor is registered, Slate calls `FBlenderInputHandler::HandleKeyDownEvent()` before dispatching events to any widget. `G` / `R` / `S` begin a transform; `X` / `Y` / `Z` lock the axis; digit keys fill the numeric buffer; `Enter`, `Space`, `Escape`, LMB, and RMB confirm or cancel.
+  </Step>
+  <Step title="ShutdownModule">
+    The engine calls `FBlenderControlsModule::ShutdownModule()`. The `TSharedPtr` to `FBlenderInputHandler` is reset (triggering the destructor, which unregisters the input processor), and the style and commands are unregistered.
+  </Step>
+</Steps>
+
+## State Machine
+
+`FBlenderInputHandler` tracks the current operation with three fields:
+
+| Field | Type | Purpose |
+|---|---|---|
+| `CurrentMode` | `EBlenderTransformMode` | `None`, `Grab`, `Rotate`, or `Scale` |
+| `CurrentAxis` | `EBlenderTransformAxis` | `None`, `X`, `Y`, `Z`, or `All` |
+| `NumericBuffer` + `bIsNumericInput` | `FString` + `bool` | Accumulates typed digits; `bIsNumericInput` suspends mouse movement |
+
+`BeginTransform()` sets `bIsTransforming = true`, initializes `CurrentAxis` to `All`, and snapshots the current cursor position. Every mouse move event thereafter computes a delta and calls `ApplyTransform()`, which dispatches to `TransformSelectedActors()`.
+
+When `EndTransform(true)` is called, the final state is committed and all fields reset. When `EndTransform(false)` is called, the state machine resets but already-applied incremental changes are **not** automatically undone (see note below).
+
+<Note>
+  The source code contains a comment noting that storing original actor transforms for true cancel behavior is marked as a future improvement. Currently, `EndTransform(false)` resets the state machine but does not undo incremental mouse-driven changes applied during the transform. Use **Ctrl+Z** (standard UE5 undo) to revert actor positions after a cancelled transform.
+</Note>
+
+## Input Processor Registration
+
+`IInputProcessor` is a **Slate-level** hook, not an actor component or input binding. Registering with `FSlateApplication::RegisterInputPreProcessor` places B3D Nav at the front of the global input queue — ahead of all editor widgets and viewport clients.
+
+This has two important consequences:
+
+- **Global capture** — key events are intercepted across all UE5 editor windows, not just the active Level Viewport.
+- **Key consumption** — when `HandleKeyDownEvent` returns `true`, Slate considers the event handled and does not forward it to any other system. This is how B3D Nav suppresses standard UE5 actions for `G`, `R`, `S`, `X`, `Y`, `Z`, and numeric keys while modal mode is active.
+
+To restore normal editor behavior for any captured key, disable modal mode via the toolbar button, which unregisters the processor entirely.

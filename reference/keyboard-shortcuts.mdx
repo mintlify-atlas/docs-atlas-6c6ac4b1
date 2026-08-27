@@ -1,0 +1,68 @@
+---
+title: "B3D Nav Keyboard Shortcut Reference"
+sidebarTitle: "Keyboard Shortcuts"
+description: "Complete reference of every key binding used by B3D Nav, organized by context: modal mode toggle, transform mode entry, axis locking, and confirmation."
+---
+
+B3D Nav's keyboard shortcuts closely mirror Blender's modal transform system. All shortcuts are active only when modal mode is enabled.
+
+<Note>
+  G, R, S, X, Y, Z, and numeric keys are consumed by B3D Nav while modal mode is active. Disable modal mode to restore these keys to the standard UE5 editor.
+</Note>
+
+## Modal Mode Control
+
+| Input | Action |
+|---|---|
+| Toolbar button | Toggle B3D Nav modal mode on/off |
+
+The toolbar button registers or unregisters B3D Nav's input processor with Slate. When the button is toggled off, all standard UE5 editor key bindings are fully restored.
+
+## Transform Mode Entry
+
+These keys are only recognized when B3D Nav is enabled and **no transform is currently active**.
+
+| Key | Action |
+|---|---|
+| `G` | Begin Grab (translation) |
+| `R` | Begin Rotate |
+| `S` | Begin Scale |
+
+Once a transform mode is entered, the plugin captures subsequent key input for axis locking, numeric entry, and confirmation.
+
+## During an Active Transform
+
+### Axis Locking
+
+| Key | Action |
+|---|---|
+| `X` | Lock transform to X axis (press again to unlock) |
+| `Y` | Lock transform to Y axis (press again to unlock) |
+| `Z` | Lock transform to Z axis (press again to unlock) |
+
+Pressing the same axis key a second time toggles back to **All Axes** mode, applying the transform uniformly across all three axes.
+
+### Numeric Input
+
+Type an exact value to apply instead of using the mouse. The digits accumulate in a buffer and are committed when you press **Enter** or **Space**.
+
+| Key | Action |
+|---|---|
+| `0` – `9` | Append digit to numeric buffer |
+| `.` | Append decimal point |
+| `-` | Append minus sign (negative values) |
+| NumPad `0` – `9` | Same as keyboard row digits |
+
+Once any numeric key is pressed, mouse movement is suspended for that transform — the value is driven entirely by the typed buffer.
+
+### Confirm and Cancel
+
+| Key / Input | Action |
+|---|---|
+| Left Mouse Button | Confirm transform |
+| `Enter` | Confirm transform (applies numeric input if active) |
+| `Space` | Confirm transform (applies numeric input if active) |
+| Right Mouse Button | Cancel transform |
+| `Escape` | Cancel transform |
+
+Confirming a transform finalizes all incremental changes applied to the selected actors. Cancelling resets the B3D Nav state machine; use **Ctrl+Z** (standard UE5 undo) to revert any actor movement already applied during the transform session.

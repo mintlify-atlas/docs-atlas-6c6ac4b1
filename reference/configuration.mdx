@@ -1,0 +1,76 @@
+---
+title: "B3D Nav Plugin Configuration and Settings"
+sidebarTitle: "Configuration"
+description: "Overview of B3D Nav's configurable constants, plugin metadata, and UE5 module settings found in the uplugin file and Build.cs."
+---
+
+B3D Nav ships with sensible defaults and requires no external configuration. Several constants in the source control transform sensitivity and can be modified by forking the plugin.
+
+<Info>
+  To permanently change sensitivity, open `Source/BlenderControls/Private/BlenderInputHandler.cpp`, edit the constants, and recompile via Unreal Build Tool.
+</Info>
+
+## Plugin Metadata
+
+The following fields are declared in `BlenderControls.uplugin`:
+
+| Field | Value |
+|---|---|
+| FriendlyName | `Blender Controls` |
+| Version | `1.0` |
+| Category | `Editor` |
+| Module Type | `Editor` (not included in packaged builds) |
+| CanContainContent | `false` |
+| IsBetaVersion | `false` |
+
+Because the module type is `Editor`, B3D Nav is stripped from shipping builds automatically — it will never add runtime overhead to a packaged game.
+
+## Sensitivity Constants
+
+These are compile-time constants in `BlenderInputHandler.cpp`. Modifying them requires recompiling the plugin.
+
+### Mouse delta multiplier
+
+Controls how far actors move or scale per pixel of mouse travel. Applies to all transform modes (Grab, Rotate, Scale).
+
+```cpp BlenderInputHandler.cpp
+// Mouse-driven transform scale
+const float ScaleFactor = 0.01f;
+const float TransformValue = Delta.X * ScaleFactor;
+```
+
+Lower values produce slower, more precise movement. Raise `ScaleFactor` for faster, coarser control.
+
+### Rotation angle scaling
+
+After the raw `TransformValue` is derived from the mouse delta, it is multiplied by `50.0f` before being passed to the quaternion constructor as an angle in degrees.
+
+```cpp BlenderInputHandler.cpp
+// Rotation angle scaling
+const float AngleInDegrees = Value * 50.0f;
+```
+
+Higher values produce a faster rotation per pixel. Reduce this constant if fine rotational control is needed.
+
+### Minimum scale clamp
+
+Prevents any actor's scale component from reaching zero or going negative, which would invert geometry.
+
+```
+NewScale.X = FMath::Max(0.001f, NewScale.X);
+NewScale.Y = FMath::Max(0.001f, NewScale.Y);
+NewScale.Z = FMath::Max(0.001f, NewScale.Z);
+```
+
+The clamp floor is `0.001f` per axis. This value can be lowered but should never be set to `0.0f`.
+
+## Module Dependencies
+
+Declared in `BlenderControls.Build.cs`. All entries are standard UE5 engine modules — no third-party packages are required.
+
+| Scope | Modules |
+|---|---|
+| **Public** | `Core` |
+| **Private** | `CoreUObject`, `Engine`, `Slate`, `SlateCore`, `InputCore`, `EditorStyle`, `UnrealEd`, `LevelEditor`, `Projects`, `ToolMenus` |
+
+Because all dependencies are engine-bundled, the plugin compiles against any standard UE5 source or binary installation without additional setup.

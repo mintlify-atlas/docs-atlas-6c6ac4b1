@@ -1,0 +1,66 @@
+{
+  "projectType": "general",
+  "projectName": "B3D Nav",
+  "projectDescription": "A UE5 editor plugin that brings Blender-style object manipulation (grab, rotate, scale with axis locking and numeric input) into the Unreal Engine viewport.",
+  "theme": "aspen",
+  "primaryColor": "#E87B2E",
+  "lightColor": "#F5A96B",
+  "darkColor": "#C05A10",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "installation", "quickstart"]
+          },
+          {
+            "group": "Using B3D Nav",
+            "pages": [
+              "usage/modal-mode",
+              "usage/transform-operations",
+              "usage/axis-locking",
+              "usage/numeric-input"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/keyboard-shortcuts",
+              "reference/configuration",
+              "reference/architecture"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": ["contributing/development-setup", "contributing/guidelines"]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Modal mode toggled via toolbar button — activate/deactivate Blender-style controls without affecting normal UE5 input",
+    "Grab (G), Rotate (R), Scale (S) transform modes matching Blender's keyboard shortcuts",
+    "Axis locking via X, Y, Z keys during any active transform",
+    "Numeric input — type a value and press Enter/Space to apply a precise transformation",
+    "Mouse-driven screen-space manipulation as an alternative to numeric input",
+    "Left-click to confirm, Right-click or Escape to cancel any in-progress transform",
+    "Works on multiple selected actors simultaneously",
+    "Zero-configuration: ships as a standard UE5 Editor plugin with no external dependencies"
+  ],
+  "publicApiSurface": [
+    "FBlenderControlsModule::StartupModule()",
+    "FBlenderControlsModule::ShutdownModule()",
+    "FBlenderControlsModule::PluginButtonClicked() — toggles modal mode",
+    "FBlenderInputHandler::ToggleEnabled()",
+    "FBlenderInputHandler::HandleKeyDownEvent() — processes G/R/S, X/Y/Z, numeric, Enter, Escape",
+    "FBlenderInputHandler::HandleMouseMoveEvent() — applies mouse-delta-based transforms",
+    "FBlenderInputHandler::HandleMouseButtonDownEvent() — LMB confirm, RMB cancel",
+    "EBlenderTransformMode enum: None, Grab, Rotate, Scale",
+    "EBlenderTransformAxis enum: None, X, Y, Z, All",
+    "FBlenderControlsCommands::PluginAction — UI toggle-button command",
+    "FBlenderControlsStyle — style/icon registration"
+  ]
+}

@@ -1,47 +1,70 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "Get Started with B3D Nav in 5 Minutes"
+sidebarTitle: "Quickstart"
+description: "Learn to activate B3D Nav's modal mode and perform a Grab, Rotate, and Scale transform on UE5 actors using Blender-style keyboard shortcuts."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
-
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
-
-## Prerequisites
-
-Before you begin, you must have:
-
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
-
-## Get started
+By the end of this walkthrough you will have activated B3D Nav's modal mode, grabbed and moved an actor with free and axis-locked translation, rotated it, scaled it uniformly and on a single axis, entered a precise numeric transform, and cancelled a transform mid-operation. Everything uses keyboard shortcuts — no gizmo handles required.
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+  <Step title="Enable modal mode">
+    Find the **Blender Controls** toggle button in the Level Editor toolbar and click it. This calls `ToggleEnabled()` on the plugin's `FBlenderInputHandler`, which registers it as a global `IInputProcessor` with Slate. From this point on, the handler intercepts key events before the viewport processes them.
 
-    ```bash
-    npm install your-package
-    ```
+    Click the button again at any time to disable the plugin and restore default UE5 input behaviour.
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
 
-    ```bash
-    your-cli init
-    ```
+  <Step title="Select an actor">
+    In the Level Editor viewport, left-click any actor in the scene to select it. You can also select multiple actors using **Ctrl+Click** or a drag selection box — B3D Nav transforms all selected actors simultaneously.
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
 
-    ```bash
-    your-cli start
-    ```
+  <Step title="Grab and move the actor">
+    With the actor selected, press **G**. The plugin enters `EBlenderTransformMode::Grab` and begins tracking your mouse position. Move your mouse left and right — the actor translates along all axes proportionally to the mouse delta.
+
+    - To confirm and keep the new position: **left-click** or press **Enter**.
+    - To cancel and return to the original position: press **Escape** or **right-click**.
+  </Step>
+
+  <Step title="Rotate the actor">
+    Press **R** to enter `EBlenderTransformMode::Rotate`. Move your mouse to rotate the actor. For precise axis-locked rotation, press **Z** while rotating — the actor will spin exclusively around the world Z axis. Press **Z** again to toggle back to free rotation.
+
+    Axis keys work the same way for all three transform modes:
+
+    | Key | Locks to axis |
+    |-----|---------------|
+    | `X` | World X axis |
+    | `Y` | World Y axis |
+    | `Z` | World Z axis |
+
+    Left-click or **Enter** to confirm; **Escape** or right-click to cancel.
+  </Step>
+
+  <Step title="Scale the actor">
+    Press **S** to enter `EBlenderTransformMode::Scale`. Moving the mouse scales the actor uniformly across all three axes. To scale only the X axis, press **X** during the operation. The plugin will apply the scale factor to the X component only, leaving Y and Z unchanged.
+
+    Left-click or **Enter** to confirm.
+  </Step>
+
+  <Step title="Use numeric precision">
+    For exact transforms, start the operation and then type a number before confirming. For example:
+
+    1. Press **G** to begin a grab.
+    2. Type **100** on the keyboard. The plugin appends each digit to an internal `NumericBuffer`.
+    3. Press **Enter**. The plugin calls `ApplyNumericTransform()`, moving the actor exactly **100 units** along the active axis (all axes by default).
+
+    Numeric input supports integers, decimals (`.`), and negative values (`-`). You can combine numeric input with axis locking — for example, press **G**, then **Z**, then **50**, then **Enter** to move the actor exactly 50 units along the Z axis.
+  </Step>
+
+  <Step title="Cancel a transform">
+    At any point during an active transform — whether you're moving the mouse or mid-way through typing a number — press **Escape** or **right-click** to cancel. The actor returns to its position at the moment the transform began.
   </Step>
 </Steps>
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+## What just happened
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
-</Tip>
+B3D Nav works by implementing Unreal's `IInputProcessor` interface in `FBlenderInputHandler`. When modal mode is enabled, the handler is registered with `FSlateApplication::RegisterInputPreProcessor()`. Slate calls the handler's `HandleKeyDownEvent`, `HandleMouseMoveEvent`, and `HandleMouseButtonDownEvent` methods before routing input to any viewport widget.
+
+This architecture means transforms are active regardless of which panel or viewport currently holds keyboard focus. When a transform key is pressed, `BeginTransform()` records the current mouse position and sets the active `EBlenderTransformMode`. Subsequent mouse move events calculate a delta, scale it, and call `TransformSelectedActors()` — which iterates `GEditor->GetSelectedActors()` and applies the appropriate translation, rotation, or scale to every actor in the selection via `SetActorTransform()`. Viewports are redrawn immediately via `GEditor->RedrawLevelEditingViewports()`.
+
+<Note>
+  If multiple actors are selected when you begin a transform, **all of them are transformed simultaneously**. Each actor in the selection receives the same directional delta or numeric value applied independently to its own `FTransform`.
+</Note>
