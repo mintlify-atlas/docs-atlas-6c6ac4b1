@@ -1,7 +1,7 @@
 ---
-title: "B3D Nav Plugin Configuration and Settings"
+title: "B3D Nav Configuration: Constants, Metadata, and Dependencies"
 sidebarTitle: "Configuration"
-description: "Overview of B3D Nav's configurable constants, plugin metadata, and UE5 module settings found in the uplugin file and Build.cs."
+description: "Overview of B3D Nav's compile-time sensitivity constants, uplugin metadata fields, and UE5 module dependencies declared in Build.cs."
 ---
 
 B3D Nav ships with sensible defaults and requires no external configuration. Several constants in the source control transform sensitivity and can be modified by forking the plugin.
@@ -56,7 +56,7 @@ Higher values produce a faster rotation per pixel. Reduce this constant if fine 
 
 Prevents any actor's scale component from reaching zero or going negative, which would invert geometry.
 
-```
+```cpp BlenderInputHandler.cpp
 NewScale.X = FMath::Max(0.001f, NewScale.X);
 NewScale.Y = FMath::Max(0.001f, NewScale.Y);
 NewScale.Z = FMath::Max(0.001f, NewScale.Z);

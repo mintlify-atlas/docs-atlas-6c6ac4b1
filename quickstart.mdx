@@ -18,14 +18,18 @@ By the end of this walkthrough you will have activated B3D Nav's modal mode, gra
   </Step>
 
   <Step title="Grab and move the actor">
-    With the actor selected, press **G**. The plugin enters `EBlenderTransformMode::Grab` and begins tracking your mouse position. Move your mouse left and right — the actor translates along all axes proportionally to the mouse delta.
+    With the actor selected, press **G**. The plugin enters `EBlenderTransformMode::Grab` and begins tracking your mouse position. Move your mouse left and right — the actor translates based on the horizontal mouse delta scaled by a factor of `0.01`.
 
-    - To confirm and keep the new position: **left-click** or press **Enter**.
-    - To cancel and return to the original position: press **Escape** or **right-click**.
+    - To confirm and keep the new position: **left-click**, press **Enter**, or press **Space**.
+    - To cancel the operation: press **Escape** or **right-click**.
+
+    <Warning>
+      Cancelling a mouse-driven transform does not automatically restore the actor's original position in the current implementation. Use **Ctrl+Z** (Unreal's standard undo) after cancelling if you need to revert the move.
+    </Warning>
   </Step>
 
   <Step title="Rotate the actor">
-    Press **R** to enter `EBlenderTransformMode::Rotate`. Move your mouse to rotate the actor. For precise axis-locked rotation, press **Z** while rotating — the actor will spin exclusively around the world Z axis. Press **Z** again to toggle back to free rotation.
+    Press **R** to enter `EBlenderTransformMode::Rotate`. Move your mouse to rotate the actor. For precise axis-locked rotation, press **Z** while rotating — the actor will spin exclusively around the world Z axis. Press **Z** again to toggle back to free rotation (which defaults to the Z axis for unspecified rotation).
 
     Axis keys work the same way for all three transform modes:
 
@@ -35,27 +39,33 @@ By the end of this walkthrough you will have activated B3D Nav's modal mode, gra
     | `Y` | World Y axis |
     | `Z` | World Z axis |
 
-    Left-click or **Enter** to confirm; **Escape** or right-click to cancel.
+    Press the same axis key a second time to unlock and return to the default free-transform behaviour.
+
+    Left-click, **Enter**, or **Space** to confirm; **Escape** or right-click to cancel.
   </Step>
 
   <Step title="Scale the actor">
     Press **S** to enter `EBlenderTransformMode::Scale`. Moving the mouse scales the actor uniformly across all three axes. To scale only the X axis, press **X** during the operation. The plugin will apply the scale factor to the X component only, leaving Y and Z unchanged.
 
-    Left-click or **Enter** to confirm.
+    Left-click, **Enter**, or **Space** to confirm.
   </Step>
 
   <Step title="Use numeric precision">
-    For exact transforms, start the operation and then type a number before confirming. For example:
+    For exact transforms, start the operation and then type a number before confirming. Once you begin typing, mouse movement is ignored — the plugin exclusively uses the typed value. For example:
 
     1. Press **G** to begin a grab.
     2. Type **100** on the keyboard. The plugin appends each digit to an internal `NumericBuffer`.
-    3. Press **Enter**. The plugin calls `ApplyNumericTransform()`, moving the actor exactly **100 units** along the active axis (all axes by default).
+    3. Press **Enter** or **Space**. The plugin calls `ApplyNumericTransform()`, moving the actor exactly **100 units** along the active axis (all axes by default).
 
     Numeric input supports integers, decimals (`.`), and negative values (`-`). You can combine numeric input with axis locking — for example, press **G**, then **Z**, then **50**, then **Enter** to move the actor exactly 50 units along the Z axis.
+
+    <Note>
+      When numeric input is active, pressing **Escape** cancels the entire operation and the typed number is discarded. Because no incremental movement has been applied (the actor only moves when you confirm), the actor remains at its original position.
+    </Note>
   </Step>
 
   <Step title="Cancel a transform">
-    At any point during an active transform — whether you're moving the mouse or mid-way through typing a number — press **Escape** or **right-click** to cancel. The actor returns to its position at the moment the transform began.
+    At any point during an active transform, press **Escape** or **right-click** to cancel. For numeric input operations the actor is unaffected because the transform is applied only on confirmation. For mouse-driven transforms, incremental movement is applied in real time as you move the mouse, so use **Ctrl+Z** after cancelling to undo any movement already applied.
   </Step>
 </Steps>
 
@@ -63,7 +73,7 @@ By the end of this walkthrough you will have activated B3D Nav's modal mode, gra
 
 B3D Nav works by implementing Unreal's `IInputProcessor` interface in `FBlenderInputHandler`. When modal mode is enabled, the handler is registered with `FSlateApplication::RegisterInputPreProcessor()`. Slate calls the handler's `HandleKeyDownEvent`, `HandleMouseMoveEvent`, and `HandleMouseButtonDownEvent` methods before routing input to any viewport widget.
 
-This architecture means transforms are active regardless of which panel or viewport currently holds keyboard focus. When a transform key is pressed, `BeginTransform()` records the current mouse position and sets the active `EBlenderTransformMode`. Subsequent mouse move events calculate a delta, scale it, and call `TransformSelectedActors()` — which iterates `GEditor->GetSelectedActors()` and applies the appropriate translation, rotation, or scale to every actor in the selection via `SetActorTransform()`. Viewports are redrawn immediately via `GEditor->RedrawLevelEditingViewports()`.
+This architecture means transforms are active regardless of which panel or viewport currently holds keyboard focus. When a transform key is pressed, `BeginTransform()` records the current mouse position and sets the active `EBlenderTransformMode`. Subsequent mouse move events calculate a horizontal screen-space delta, multiply it by a scale factor of `0.01`, and call `TransformSelectedActors()` — which iterates `GEditor->GetSelectedActors()` and applies the appropriate translation, rotation, or scale to every actor in the selection via `SetActorTransform()`. Viewports are redrawn immediately via `GEditor->RedrawLevelEditingViewports()`.
 
 <Note>
   If multiple actors are selected when you begin a transform, **all of them are transformed simultaneously**. Each actor in the selection receives the same directional delta or numeric value applied independently to its own `FTransform`.

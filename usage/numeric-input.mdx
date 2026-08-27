@@ -1,7 +1,7 @@
 ---
-title: "Numeric Input: Precise Transforms in B3D Nav"
+title: "Numeric Input: Type Exact Transform Values in B3D Nav"
 sidebarTitle: "Numeric Input"
-description: "Type a numeric value during any active B3D Nav transform to apply an exact distance, angle, or scale factor instead of dragging the mouse."
+description: "Type a numeric value during any active B3D Nav transform to apply an exact distance, angle, or scale factor instead of dragging the mouse in UE5."
 ---
 
 Numeric input lets you specify exact transform values by typing during an active transform mode, bypassing mouse movement entirely. Rather than eyeballing a distance or angle with the mouse, you can type the exact value you want and press Enter to apply it — a workflow identical to Blender's modal numeric entry.
@@ -32,7 +32,7 @@ All other keys during an active transform are either handled as axis locks, conf
 
 | Key sequence | Result |
 |---|---|
-| `G` → `100` → Enter | Moves selection 100 units along all axes |
+| `G` → `100` → Enter | Moves selection 100 units along X, Y, and Z simultaneously (all-axes vector `(1,1,1) × 100`) |
 | `G` → `Z` → `50` → Enter | Moves selection 50 units along the Z axis |
 | `R` → `Z` → `45` → Enter | Rotates selection 45 degrees around the Z axis |
 | `R` → `X` → `-90` → Enter | Rotates selection −90 degrees around the X axis |

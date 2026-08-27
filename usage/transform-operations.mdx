@@ -1,7 +1,7 @@
 ---
-title: "Grab, Rotate, and Scale Actors with B3D Nav"
+title: "Grab, Rotate, and Scale Actors: B3D Nav Transform Guide"
 sidebarTitle: "Transform Operations"
-description: "Detailed guide to B3D Nav's three transform modes — Grab (G), Rotate (R), and Scale (S) — with mouse and numeric input workflows."
+description: "Detailed guide to B3D Nav's three transform modes — Grab (G), Rotate (R), and Scale (S) — with mouse delta formulas and numeric input workflows."
 ---
 
 B3D Nav provides three transform modes — **Grab**, **Rotate**, and **Scale** — each triggered by a single key press while [modal mode](/usage/modal-mode) is active. This matches Blender's modal transform workflow: press a key to start the operation, move your mouse to adjust the value interactively, then confirm or cancel when done.
@@ -17,7 +17,7 @@ const float ScaleFactor = 0.01f;
 const float TransformValue = Delta.X * ScaleFactor;
 ```
 
-The resulting translation vector is `Direction * Value`, where `Direction` is the axis vector and `Value` is the scaled mouse delta. By default — before any axis is locked — the axis is `EBlenderTransformAxis::All`, which resolves to `FVector(1, 1, 1)`, moving the actor uniformly along all axes in proportion to horizontal mouse movement.
+The resulting translation vector is `Direction * Value`, where `Direction` is the axis vector and `Value` is the scaled mouse delta. By default — before any axis is locked — the axis is `EBlenderTransformAxis::All`, which resolves to `FVector(1, 1, 1)`, moving the actor simultaneously along all three world axes in proportion to horizontal mouse movement.
 
 ## Rotate
 
@@ -78,7 +78,11 @@ NewScale.Z = FMath::Max(0.001f, NewScale.Z);
 | **Right Mouse Button** | Cancel — calls `EndTransform(false)` |
 | **Escape** | Cancel — calls `EndTransform(false)` |
 
-When cancelled, the transform operation exits without finalizing any further changes. Confirming applies all accumulated mouse-driven (or numerically typed) deltas to the actors' transforms permanently.
+Because transforms are applied incrementally to actors on every mouse-move event, the actor's position is updated in real time as you drag. Confirming ends the transform session and keeps all applied changes. Cancelling also ends the session but does **not** restore the actor's original transform — the current implementation does not store pre-transform snapshots, so changes made before cancellation remain in place.
+
+<Warning>
+  Cancelling a transform does **not** revert the actor to its original position. If you need to undo a cancelled or confirmed operation, use **Ctrl+Z** (UE5 editor undo) immediately after ending the transform.
+</Warning>
 
 ## Working with multiple actors
 

@@ -10,24 +10,24 @@ B3D Nav is an Unreal Engine 5 editor plugin that brings Blender's modal object m
 
 Unreal Engine's default transform workflow relies on gizmo handles: you click a coloured arrow, ring, or box and drag. That works, but it requires precise mouse placement, a mode switch for each transform type, and constant context switching between keyboard and mouse.
 
-Blender's approach is different. Press **G** to grab, **R** to rotate, **S** to scale — the transform begins immediately and follows your mouse. Tap **X**, **Y**, or **Z** to lock to an axis, or type a number for exact precision, then confirm with **Enter** or left-click. Your hands barely leave the keyboard.
+Blender's approach is different. Press **G** to grab, **R** to rotate, **S** to scale — the transform begins immediately and follows your mouse. Tap **X**, **Y**, or **Z** to lock to an axis, or type a number for exact precision, then confirm with **Enter** or **Space**. Your hands barely leave the keyboard.
 
 B3D Nav brings exactly that pattern to UE5. The plugin registers as a global `IInputProcessor` through Slate, so it intercepts transform keys before the viewport handles them. The result is a modal workflow that works regardless of which viewport widget currently holds focus — no gizmo dragging needed.
 
 ## Core concepts
 
 <CardGroup cols={2}>
-  <Card title="Modal Mode" icon="toggle-on" href="/usage/modal-mode">
+  <Card title="Modal Mode" icon="toggle-on">
     Toggle the plugin on and off with the **Blender Controls** toolbar button. When enabled, G, R, and S keys activate transforms instead of their default editor bindings.
   </Card>
-  <Card title="Transform Operations" icon="arrows-up-down-left-right" href="/usage/transform-operations">
-    Three transform modes mirror Blender exactly: **Grab** (G) for translation, **Rotate** (R) for rotation, and **Scale** (S) for scaling.
+  <Card title="Transform Operations" icon="arrows-up-down-left-right">
+    Three transform modes mirror Blender: **Grab** (G) for translation, **Rotate** (R) for rotation, and **Scale** (S) for scaling.
   </Card>
-  <Card title="Axis Locking" icon="lock" href="/usage/axis-locking">
-    During any transform, press **X**, **Y**, or **Z** to constrain movement to that world axis. Press the same key again to unlock and return to free transform.
+  <Card title="Axis Locking" icon="lock">
+    During any transform, press **X**, **Y**, or **Z** to constrain movement to that world axis. Press the same key again to unlock and return to free transform across all axes.
   </Card>
-  <Card title="Numeric Input" icon="keyboard" href="/usage/numeric-input">
-    Type a number at any point during a transform to specify an exact value — distance in units, angle in degrees, or scale factor — then press **Enter** to apply.
+  <Card title="Numeric Input" icon="keyboard">
+    Type a number at any point during a transform to specify an exact value — distance in units, angle in degrees, or scale factor — then press **Enter** or **Space** to apply.
   </Card>
 </CardGroup>
 
